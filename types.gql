@@ -1,0 +1,90 @@
+type User {
+  id: ID!
+  createdAt: String!
+  username: String!
+  name: String
+}
+
+type Task {
+  id: ID!
+  createdAt: String!
+  content: String!
+  approachCount: Int!
+}
+
+type Approach {
+  id: ID!
+  createdAt: String!
+  content: String!
+  task: Task!
+}
+
+# this is a pseudo query, just to start
+query {
+  taskMainList {
+    id
+    content
+  }
+}
+
+union TaskOrApproach = Task | Approach
+
+type Query {
+  taskMainList: [Task!]
+  search(term: String!): [TaskOrApproach!]
+  # more query root fields will come...
+}
+
+#not ideal this
+query {
+  search(term: "something") {
+    taksList {
+      id
+      content
+      approachCount
+    }
+    approachList {
+      id
+      content
+      task {
+        id
+        content
+      }
+    }
+  }
+}
+
+#messy this, but workable
+query {
+  search(term: "something") {
+    id
+    content
+
+    approachCount #in case result is a Task
+    task {
+      #in case result is an Approach
+      id
+      content
+    }
+  }
+}
+
+#using a union type
+query {
+  search(term: "something") {
+    type: __typename
+    ... on Task {
+      id
+      content
+      approachCount
+    }
+    ... on Approach {
+      id
+      content
+      task {
+        id
+        content
+      }
+    }
+  }
+}
