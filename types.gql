@@ -1,23 +1,139 @@
+input UserInput {
+  username: String!
+  password: String!
+  firstName: String
+  lastName: String
+}
+input AuthInput {
+  username: String!
+  password: String!
+}
+input TaskInput {
+  content: String!
+  tags: [String!]!
+  isPrivate: Boolean!
+}
+input ApproachDetailInput {
+  content: String!
+  category: ApproachDetailCategory!
+}
+input ApproachInput {
+  content: String!
+  detailList: [ApproachDetailInput!]!
+}
+input ApproachVoteInput {
+  """true for up-vote, and false for down-vote"""
+  up: Boolean!
+}
+
+union TaskOrApproach = Task | Approach
+interface SearchResultItem {
+  id: ID!
+  content: String!
+}
+enum ApproachDetailCategory {
+  NOTE
+  EXPLANATION 
+  WARNING
+}
 type User {
   id: ID!
   createdAt: String!
   username: String!
-  name: String
+  name: String!
+  taskList: [Task!]!
+
 }
 
-type Task {
-  id: ID!
+type Task implements SearchResultItem {
+  # id: ID!
+  # content: String!
   createdAt: String!
-  content: String!
   approachCount: Int!
+  author: User!
+  approachList: [Approach!]!
+  tags: [String!]!
 }
 
-type Approach {
-  id: ID!
-  createdAt: String!
+type ApproachDetail {
   content: String!
-  task: Task!
+  category: ApproachDetailCategory!
+
+  #more fields coming
 }
+
+type Approach implements SearchResultItem {
+  # id: ID!
+  # content: String!
+  createdAt: String!
+  task: Task!
+  voteCount: Int!
+  author: User!
+  detailList: [ApproachDetail!]!
+}
+
+type UserError {
+  message: String!
+}
+
+type UserPayload {
+  errors: [UserError!]!
+  user: User
+  authToken: String
+}
+
+type UserDeletedPayload {
+  errors: [UserError!]!
+  deletedUserId: ID
+}
+
+type TaskPayload {
+  errors: [UserError!]!
+  task: Task
+}
+
+type ApproachPayload {
+  errors: [UserError!]!
+  approach: Approach
+}
+
+
+
+type Query {
+  taskMainList: [Task!]
+  search(term: String!): [SearchResultItem!]
+  taskInfo(id: ID!): Task
+  me: User
+  # search(term: String!): [TaskOrApproach!]
+  # more query root fields will come...
+}
+
+type Mutation {
+  userCreate(
+    input: UserInput
+  ): UserPayload!
+  userLogin(
+    input: AuthInput
+  ): UserPayload!
+  userDelete: UserDeletedPayload!
+  taskCreate(input: TaskInput!): TaskPayload!
+
+  approachCreate(
+    taskId: ID!
+    input: ApproachInput!
+  ): ApproachPayload!
+  approachVote(
+    approachId: ID!
+    input: ApproachVoteInput!
+  ): ApproachPayload!
+}
+
+type Subscription {
+  voteChanged(taskId: ID!): Approach!
+  taskMainListChanged: [Task!]
+}
+
+
 
 # this is a pseudo query, just to start
 query {
@@ -25,14 +141,6 @@ query {
     id
     content
   }
-}
-
-union TaskOrApproach = Task | Approach
-
-type Query {
-  taskMainList: [Task!]
-  search(term: String!): [TaskOrApproach!]
-  # more query root fields will come...
 }
 
 #not ideal this
@@ -86,5 +194,118 @@ query {
         content
       }
     }
+  }
+}
+
+#using an interface type - it is basically using shared fields always, and others conditionally
+query {
+  search(term: "something") {
+    type: __typename
+    id
+    content
+    ... on Task {
+      approachCount
+    }
+    ... on Approach {
+      task {
+        id
+        content
+      }
+    }
+  }
+}
+
+query {
+  taskInfo (
+    #some argument here to identify a Task
+  ) {
+    # fields here
+
+    author {
+      #fields here 
+    }
+    approachList {
+      #fields here
+
+      author {
+        #fields here
+      }
+
+      detailList {
+        #fields here
+      }
+    }
+  }
+}
+
+query {
+  me (
+    #argument to validate logged in user
+  ) {
+    taskList {
+      #fields under task list
+    }
+  }
+}
+
+mutation {
+  userCreate (
+    # input for a new User record
+  ) {
+    #fail / success response
+  }
+}
+  
+mutation {
+  userLogin (
+    # input to identify a User
+  ) {
+    # fail / success response
+  }
+}
+
+mutation {
+  userDelete {
+    # fail / success payload
+  }
+}
+
+mutation {
+  taskCreate (
+    # some input for a new Task
+  ) {
+    # fail / success task payload 
+  }
+}
+
+mutation {
+  approachCreate (
+    #input to identify a Task record 
+    #input for a new apporach (also includes ApproachDetail data)
+  ) {
+    #fail / success payload 
+  }
+}
+
+mutation {
+  approachVote (
+    #input to identify an Approach record
+    #input for "Vote"
+  ) {
+    #fail / success payload
+  }
+}
+
+subscription {
+  voteChanged (
+    #input to identify a Task record
+  ) {
+    #fields under an approach record 
+  }
+}
+
+subscription {
+  taskMainListChanged {
+    #Some fields under a task record
   }
 }
