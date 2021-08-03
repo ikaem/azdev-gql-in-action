@@ -248,6 +248,10 @@ query {
   }
 }
 
+query {
+  currentTime
+}
+
 mutation {
   userCreate (
     # input for a new User record
