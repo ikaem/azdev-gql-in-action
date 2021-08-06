@@ -27,6 +27,7 @@ input ApproachVoteInput {
 }
 
 union TaskOrApproach = Task | Approach
+
 interface SearchResultItem {
   id: ID!
   content: String!
